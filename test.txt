@@ -1,0 +1,4 @@
+Hi FAT32 with read and write support.
+Hi User.
+Hi DoorsOS.
+Yet another text file with no real purpose in life.

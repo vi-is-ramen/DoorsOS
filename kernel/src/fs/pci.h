@@ -1,0 +1,13 @@
+#ifndef PCI_H
+#define PCI_H
+#include "ahci.h"
+#include <stdint.h>
+#include <stddef.h>
+static inline HBA_MEM* host;
+
+uint16_t pciConfigReadWord(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset);
+void enablePCIInterrupts(uint8_t bus, uint8_t device, uint8_t function, size_t ioapicaddr);
+void checkMSI(uint8_t bus, uint8_t device, uint8_t func);
+void find_ahci_controller_and_set_host();
+
+#endif
