@@ -3,6 +3,11 @@
 
 #include <stdint.h>
 
+#define PAGE_PRESENT    0x1
+#define PAGE_WRITE      0x2
+#define PAGE_NO_EXECUTE (1UL << 63)
+
+
 // options1:     R P/W U/S PWT PCD A D PS(1) G AVL
 // Bits (0-11):  1 1   1   1   1   1 1 1     1 3   
    
@@ -30,7 +35,7 @@ typedef struct PageEntry {
 typedef struct PageTable {
     PageEntry entries[512];
 } PageTable;
-
+ void flushTLB(void* page) ;
 void* getPhysicalAddress(void* virtual_address); 
 PageTable* initPML4(void); 
 void mapPage(void* virtual_address, void* physical_address, uint8_t flags);

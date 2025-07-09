@@ -18,20 +18,14 @@ static uint32_t get_cluster_lba(uint32_t cluster) {
 }
 
 static void read_sector(uint32_t lba) {
-        if(use_ahci) {
-            ahci_read(&host->ports[0], (uint32_t)(lba & 0xFFFFFFFF), (uint32_t)(lba >> 32), 1, sector);
-
-        }
-        else{
+        
         ata_pio_read28(lba, 1, sector);
-        }
+        
     
 }
 static void write_sector(uint32_t lba, const uint8_t* data) {
-        if(use_ahci) {
-            ahci_write(&host->ports[0], (uint32_t)(lba & 0xFFFFFFFF), (uint32_t)(lba >> 32), 1, sector);
-        }
-        else {ata_pio_write48(lba, 1, (uint8_t*)data);}
+        
+        ata_pio_write48(lba, 1, (uint8_t*)data);
     
 }
 
@@ -227,13 +221,9 @@ static bool fat32_find_entry(const char* path, fat32_dir_entry_t* out) {
 // --- Public API ---
 
 bool fat32_mount(uint32_t lba,bool ahci) {
-    if (ahci) {
-        use_ahci = true;
-        ahci_read(&host->ports[0], (uint32_t)(lba & 0xFFFFFFFF), (uint32_t)(lba >> 32), 1, sector);
-    }
-    else {
+    
     ata_pio_read28(lba, 1, sector);
-    }
+    
     
 
     fs.start_lba = lba;

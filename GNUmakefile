@@ -51,8 +51,24 @@ run-hdd: $(IMAGE_NAME).hdd
 	qemu-system-x86_64.exe \
 		-cpu qemu64,+sse,+sse2 \
 		-hda $(IMAGE_NAME).hdd \
-		-serial stdio\
-		-m 1G\
+		-serial stdio \
+		-netdev user,id=n0 \
+		-device rtl8139,netdev=n0 \
+		-m 1G \
+		$(QEMUFLAGS)
+
+.PHONY: run-idk-hdd
+run-idk-hdd: $(IMAGE_NAME).hdd disk.img
+	qemu-system-x86_64.exe \
+		-cpu qemu64,+sse,+sse2 \
+		-hda $(IMAGE_NAME).hdd \
+		-drive id=disk0,file=disk.img,if=none,format=raw \
+		-device ahci,id=ahci0 \
+		-device ide-drive,drive=disk0,bus=ahci0.0 \
+		-serial stdio \
+		-netdev user,id=n0 \
+		-device rtl8139,netdev=n0 \
+		-m 1G \
 		$(QEMUFLAGS)
 
 

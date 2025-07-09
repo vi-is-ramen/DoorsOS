@@ -2,6 +2,7 @@
 #include "../gfx/term.h"
 #include "../libs/string.h"
 #include "../gfx/printf.h"
+#include "../gfx/serial_io.h"
 #include "../ps2/io.h"
 
 void (*interrupt_handlers[256])(interrupt_frame_t* frame);
@@ -45,6 +46,7 @@ void exception_handler(interrupt_frame_t* frame) {
         uint64_t fault_addr;
         asm volatile("mov %%cr2, %0" : "=r"(fault_addr));
         printf("Page Fault at address: 0x%lx\n", fault_addr);
+        serial_io_printf("Page Fault at address: 0x%lx\n", fault_addr);
     }
 
     // Halt the system

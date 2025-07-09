@@ -1,12 +1,12 @@
 #include "ahci.h"
+#include "pci.h"
 #include "../libs/string.h"
 #include "../mem/heap.h"
 
-#include "../bootloader.h"
-
 #include "../gfx/printf.h"
 
-static void traceAHCI(const char* str) {
+static void traceAHCI(const char* str) 
+{
     printf("[AHCI] %s\n",str);
 }
 
