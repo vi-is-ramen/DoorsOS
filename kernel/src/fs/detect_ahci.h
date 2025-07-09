@@ -51,6 +51,7 @@ volatile HBA_MEM* check_ahci_controller() {
         serial_io_printf("AHCI Base Address Register (ABAR): 0x%08x\n", ahci.abar);
         serial_io_printf("AHCI controller found at PCI %02x:%02x.%x\n", ahci.bus, ahci.device, ahci.function);
         // Map ABAR physical address to virtual address
+        printf("NOw gonna map\n");
         map_mmio(AHCI_VIRT_BASE, ahci.abar, 0x1100, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXECUTE);
 
         // Return virtual address pointer

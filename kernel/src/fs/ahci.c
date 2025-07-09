@@ -2,8 +2,9 @@
 #include "pci.h"
 #include "../libs/string.h"
 #include "../mem/heap.h"
-
+#include "../mem/new/pmm.h"
 #include "../gfx/printf.h"
+#include "../bootloader.h"
 
 static void traceAHCI(const char* str) 
 {
@@ -100,40 +101,37 @@ void stopCMD(HBA_PORT *port)
 
 void portRebase(HBA_PORT *port, int port_no)
 {
-	stopCMD(port);	// Stop command engine
- 
-	// Command list offset: 1K * port_no
-	// Command list entry size = 32
-	// Command list entry maximum count = 32
-	// Command list maximum size = 32 * 32 = 1K per port
-	port->clb = AHCI_BASE + (port_no << 10);
-	port->clbu = 0;
-	memset((void*) (uint64_t) (port->clb), 0, 0x400);
- 
-	// FIS offset: 32K + 256 * port_no
-	// FIS entry size = 256 bytes per port
-	port->fb = AHCI_BASE + (32 << 10) + (port_no << 8);
-	port->fbu = 0;
-	memset((void*) (uint64_t) (port->fb), 0, 0x100);
- 
-	// Command table offset: 40K + 8K * port_no
-	// Command table size = 256 * 32 = 8K per port
-	HBA_CMD_HEADER* cmd_header = (HBA_CMD_HEADER*) (uint64_t) (port->clb);
-	for (size_t i = 0; i < 32; i++)
-	{
-        // 8 prdt entries per command table
-        // 256 bytes per command table, 64+16+48+16*8
-		cmd_header[i].prdtl = 8;	
-                                  
+    stopCMD(port);
 
-		// Command table offset: 40K + 8K*port_no + cmd_header_index*256
-		cmd_header[i].ctba = AHCI_BASE + (40 << 10) + (port_no << 13) + (i << 8);
-		cmd_header[i].ctbau = 0;
-		memset((void*) (uint64_t) cmd_header[i].ctba, 0, 0x100);
-	}
-    // Start command engine
-	startCMD(port);	
+    uintptr_t hhdm = hhdm_request.response->offset;
+
+    // Command List Buffer
+    uintptr_t clb_phys = PhysicalAllocate(1);
+    port->clb = clb_phys;
+    port->clbu = 0;
+    memset((void*)(hhdm + clb_phys), 0, 0x1000);
+
+    // FIS Receive Area
+    uintptr_t fb_phys = PhysicalAllocate(1);
+    port->fb = fb_phys;
+    port->fbu = 0;
+    memset((void*)(hhdm + fb_phys), 0, 0x1000);
+
+    // Command Headers
+    HBA_CMD_HEADER* cmd_header = (HBA_CMD_HEADER*)(hhdm + clb_phys);
+    for (size_t i = 0; i < 32; i++)
+    {
+        cmd_header[i].prdtl = 8;
+
+        uintptr_t ctba_phys = PhysicalAllocate(1);
+        cmd_header[i].ctba = ctba_phys;
+        cmd_header[i].ctbau = 0;
+        memset((void*)(hhdm + ctba_phys), 0, 0x1000);
+    }
+
+    startCMD(port);
 }
+
  
 // Find a free command list slot
 int findCMDSlot(HBA_PORT* port, size_t cmd_slots)

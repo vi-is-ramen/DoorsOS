@@ -30,7 +30,7 @@
 #include "mem/heap.h"
 #include <limine.h>
 //#define HEAP_SIZE (400UL * 1024UL * 1024UL) // 400 MIB
-#define HEAP_SIZE (70UL * 1024UL * 1024UL)
+#define HEAP_SIZE (100UL * 1024UL * 1024UL)
 uint8_t heap[HEAP_SIZE];  // Define the heap array
 // Set the base revision to 3, this is recommended as this is the latest
 // base revision described by the Limine boot protocol specification.
@@ -432,33 +432,10 @@ void kmain(void) {
     } else {
         kprint("Memory allocation successful!\n");
     }
+    printf("Initiaitg memory mgmt\n");
+    
     struct meminfo mem_info = get_memory_info();
 lspci();
-uint32_t baylls = check_ahci_controller();
-
-#define AHCI_VIRT_BASE 0x3FF7D000
-#define AHCI_MMIO_SIZE 0x1100
-#define AHCI_BASE 0x40000000
-#define AHCI_MEM_SIZE 0x100000
-
-// Map AHCI controller MMIO registers (ABAR physical address) to virtual address
-map_mmio(AHCI_VIRT_BASE, baylls, AHCI_MMIO_SIZE, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXECUTE);
-
-// Allocate and map AHCI working memory for command lists/FIS/tables
-for (uintptr_t offset = 0; offset < AHCI_MEM_SIZE; offset += 0x1000) {
-    void* page = PhysicalAllocate(1);
-    if (!page) {
-        printf("Failed to allocate AHCI work page\n");
-        return;
-    }
-    uintptr_t hhdm = hhdm_request.response->offset;
-    memset((void*)(hhdm + (uintptr_t)page), 0, 4096);
-
-    mapPage((void*)(AHCI_BASE + offset), page, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXECUTE);
-}
-
-// Now probe AHCI controller using mapped virtual base address
-probePort(AHCI_VIRT_BASE);
 
 fat32_mount(2048, false);
 ps2_kbio_init();
