@@ -30,8 +30,8 @@
 #include "mem/heap.h"
 #include <limine.h>
 //#define HEAP_SIZE (400UL * 1024UL * 1024UL) // 400 MIB
-#define HEAP_SIZE (100UL * 1024UL * 1024UL)
-uint8_t heap[HEAP_SIZE];  // Define the heap array
+//#define HEAP_SIZE (100UL * 1024UL * 1024UL)
+//uint8_t heap[HEAP_SIZE];  // Define the heap array
 // Set the base revision to 3, this is recommended as this is the latest
 // base revision described by the Limine boot protocol specification.
 // See specification for further info.
@@ -371,14 +371,54 @@ void my_mouse_callback(MouseEvent* ev) {
     }
 }
 
+
+void test_page_mapping() {
+    serial_io_printf("HHDM variable is being setted\n");
+    uintptr_t hhdm = hhdm_request.response->offset;
+
+    // Allocate a physical page (virtual address returned)
+    serial_io_printf("Physical allocating phys_page\n");
+    uintptr_t phys_page_virtual = k_malloc(4096);
+    if (!phys_page_virtual) {
+        printf("Failed to allocate physical page!\n");
+        return;
+    }
+
+    serial_io_printf("phys_page (virtual) = %p\n", (void*)phys_page_virtual);
+    serial_io_printf("HHDM offset: %p\n", (void*)hhdm);
+
+    // Zero out memory using virtual address
+    memset((void*)phys_page_virtual, 0, 4096);
+
+    // Convert virtual to physical by subtracting HHDM base
+    uintptr_t phys_page = phys_page_virtual - hhdm;
+
+    serial_io_printf("Mapping virtual address to physical page\n");
+    void* virt_addr = (void*)0xFFFF800000300000;
+    mapPage(virt_addr, (void*)phys_page, 0x03);
+
+    serial_io_printf("Testing Reading and writing\n");
+    *(volatile uint64_t*)virt_addr = 0xDEADBEEFCAFEBABE;
+    uint64_t value = *(volatile uint64_t*)virt_addr;
+
+    if (value == 0xDEADBEEFCAFEBABE) {
+        serial_io_printf("Mapping and read/write test PASSED!\n");
+    } else {
+        serial_io_printf("Mapping failed!\n");
+    }
+}
+
+
 // The following will be our kernel's entry point.
 void kmain(void) {
     enable_sse();
     //initiatePMM(PHYS_MEM_START, PHYS_MEM_SIZE);
     struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
     struct flanterm_context *ft_ctx = initialize_terminal(framebuffer);
-    allocator_init(heap, HEAP_SIZE);
+    //allocator_init(heap, HEAP_SIZE);
+    
     kprint("Heap initialized!\n");
+    
     initPML4();
     //disable_paging();
    check_paging();
@@ -389,6 +429,20 @@ void kmain(void) {
    serial_io_printf("SSE OK\n");
    print_cpu_info();
   
+   printf("Initializing PMM and heap\n");
+
+// Check Limine memmap and HHDM response validity first
+if (memmap_request.response == NULL || hhdm_request.response == NULL) {
+    printf("Limine memmap or HHDM response is NULL. Halting.\n");
+    for (;;) __asm__("hlt");
+}
+
+printf("Initing PMM\n");
+
+
+// Initialize your physical memory manager if you have one
+setMemoryMap(0); 
+allocator_init();
     // Uncomment the following line to test SSE functionality.
     // This will double the value 21.0f and print the result.
     // If the output is 42, then SSE is working correctly.
@@ -412,29 +466,22 @@ void kmain(void) {
     }
     mouse_init();
     mouse_set_callback(my_mouse_callback);
-    clear_screen();
-    printf("\e[%d;%dHX", mouse_y + 1, mouse_x + 1);
-    //initGDT();
     kprint("DoorsOS Kernel Booted!\n");
-    initiatePMM();
+    printf("Initiating PMM\n");
+    serial_io_printf("Initializing PMM\n");
     kprint("Welcome to DoorsOS!\n");
     printf("Framebuffer address: %p\n", framebuffer->address);
-    void* p1 = (void*)PhysicalAllocate(1);
-    printf("Allocated page at %p\n", p1);
-
-    PhysicalFree((size_t)p1, 1);
-    printf("Freed page at %p\n", p1);
     
-    void* test_malloc = malloc(1024);
-    if (test_malloc == NULL) {
-        kprint("Memory allocation failed!\n");
-       hcf();
-    } else {
-        kprint("Memory allocation successful!\n");
-    }
+    
     printf("Initiaitg memory mgmt\n");
-    
+    printf("Bonnafide Now malloc\n");
+
+    void* sugma = k_malloc(10);
+    printf("Address: 0x%lX\n", (uintptr_t)sugma);
+
     struct meminfo mem_info = get_memory_info();
+    printf("\n Now gonna test memory map");
+    test_page_mapping();
 lspci();
 
 fat32_mount(2048, false);

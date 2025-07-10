@@ -1,18 +1,28 @@
 #ifndef PMM_H
 #define PMM_H
 
-#include "bitmap.h"
 #include <stdint.h>
 #include <stddef.h>
-#include "../../gfx/serial_io.h"
-
-#define debugf serial_io_printf
 
 
+typedef struct Node {
+    void* base;
+    size_t length;
+    struct Node* next;
+} Node;
 
-void initiatePMM();
+typedef struct alloc_entry {
+    size_t size;
+    void* base;
+} alloc_entry;
 
-size_t PhysicalAllocate(int pages);
-void   PhysicalFree(size_t ptr, int pages);
+void printMemoryMaps();
+void setMemoryMap(uint8_t selection);
+void* printHeader(void* start);
+void* getMemoryMapBase();
+uint64_t getMemoryMapLength();
+
+void* k_malloc(size_t size);
+void k_free(void* ptr);
 
 #endif
