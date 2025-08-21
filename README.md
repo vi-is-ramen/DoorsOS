@@ -1,6 +1,6 @@
 # What is DoorsOS 🚪?
 
-DoorsOS is an x86_64 POSIX-Compilant Limine-based operating system in C. An active effort of making a full OS, with a simple and readable codebase.
+DoorsOS is an x86_64 POSIX-Compliant Limine-based operating system in C. An active effort of making a full OS, with a simple and readable codebase.
 
 # Preview of the OS
 
@@ -64,3 +64,4 @@ make limine/limine
 Make CD: ``` make clean && make run```
 
 For ATA(recommended): ```make clean && make run-hdd```
+
